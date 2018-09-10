@@ -11,6 +11,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
 {
     public class HDRenderPipeline : RenderPipeline
     {
+//op-begin: Callbacks
+		public static event Action<ScriptableRenderContext, HDCamera, CommandBuffer> OnPrepareCamera;
+//op-end:
+
         enum ForwardPass
         {
             Opaque,
@@ -274,6 +278,10 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
             MousePositionDebug.instance.Build();
 
             InitializeRenderStateBlocks();
+			
+//op-begin: Configure callbacks
+			HDRPCallbackAttribute.ConfigureAllLoadedCallbacks();
+//op-end:
         }
 
         void InitializeRenderTextures()
@@ -910,6 +918,11 @@ namespace UnityEngine.Experimental.Rendering.HDPipeline
                     renderContext.SetupCameraProperties(camera, hdCamera.frameSettings.enableStereo);
 
                     PushGlobalParams(hdCamera, cmd, diffusionProfileSettings);
+
+//op-begin: Prepare frame callback
+					if(OnPrepareCamera != null)
+						OnPrepareCamera(renderContext, hdCamera, cmd);
+//op-end:
 
                     // TODO: Find a correct place to bind these material textures
                     // We have to bind the material specific global parameters in this mode

@@ -1,6 +1,8 @@
 {
     "name": "OcclusionProbes",
-    "references": [],
+    "references": [
+        "Unity.RenderPipelines.HighDefinition.Runtime"
+    ],
     "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
