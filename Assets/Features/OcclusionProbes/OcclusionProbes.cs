@@ -1,4 +1,4 @@
-﻿//#define HDRP_ENABLED
+﻿#define HDRP_ENABLED
 
 using UnityEngine;
 using UnityEngine.Rendering;
