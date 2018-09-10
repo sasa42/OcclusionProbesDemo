@@ -1,10 +1,16 @@
-﻿using UnityEngine;
+﻿//#define HDRP_ENABLED
+
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
+#if HDRP_ENABLED
 using UnityEngine.Experimental.Rendering.HDPipeline;
+#endif
 
 [ExecuteInEditMode]
+#if HDRP_ENABLED
 [HDRPCallback]
+#endif
 public partial class OcclusionProbes : MonoBehaviour
 {
     public static OcclusionProbes Instance { get; private set; }
@@ -38,6 +44,10 @@ public partial class OcclusionProbes : MonoBehaviour
             Debug.Assert(Instance == null);
 
         Instance = this;
+
+#if !HDRP_ENABLED //legacy
+        Camera.onPreRender += this.CameraPreRender;
+#endif
     }
 
     void OnDisable()
@@ -64,23 +74,12 @@ public partial class OcclusionProbes : MonoBehaviour
         ms_White = null;
     }
 
-	[HDRPCallbackMethod]
+#if HDRP_ENABLED
+    [HDRPCallbackMethod]
 	static void OcclusionProbesSetup()
     {
 		HDRenderPipeline.OnPrepareCamera += SetupGPUData;
 	}
-
-    // Legacy
-    private void OnPreRender()
-    {
-        if (Instance)
-        {
-            Instance.SetShaderUniforms(null, Camera.current);
-            return;
-        }
-        SetAmbientProbeShaderUniforms(null, null);
-        SetDisabledOcclusionShaderUniforms(null);
-    }
 
     static public void SetupGPUData(ScriptableRenderContext renderContext, HDCamera hdCamera, CommandBuffer cmd)
     {
@@ -93,6 +92,18 @@ public partial class OcclusionProbes : MonoBehaviour
         SetAmbientProbeShaderUniforms(cmd, null);
         SetDisabledOcclusionShaderUniforms(cmd);
     }
+#else
+    private void CameraPreRender(Camera camera)
+    {
+        if (Instance)
+        {
+            Instance.SetShaderUniforms(null, camera);
+            return;
+        }
+        SetAmbientProbeShaderUniforms(null, null);
+        SetDisabledOcclusionShaderUniforms(null);
+    }
+#endif
 
     // This function should soon make it into the LightProbes Unity api
     private static void GetShaderConstantsFromNormalizedSH(ref SphericalHarmonicsL2 ambientProbe, Vector4[] outCoefficients)
@@ -129,18 +140,15 @@ public partial class OcclusionProbes : MonoBehaviour
             return;
         }
 
-        if (cmd != null)
-        {
-            // Sky occlusion
-            cmd.SetGlobalTexture(Uniforms._OcclusionProbes, m_Data.occlusion);
-            // TODO: no full matrix mul needed, just scale and offset the pos (don't really need to support rotation)
-            cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, m_Data.worldToLocal);
-        }
-        else // Legacy
-        {
-            Shader.SetGlobalTexture(Uniforms._OcclusionProbes, m_Data.occlusion);
-            Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, m_Data.worldToLocal);
-        }
+#if HDRP_ENABLED
+        // Sky occlusion
+        cmd.SetGlobalTexture(Uniforms._OcclusionProbes, m_Data.occlusion);
+        // TODO: no full matrix mul needed, just scale and offset the pos (don't really need to support rotation)
+        cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, m_Data.worldToLocal);
+#else
+        Shader.SetGlobalTexture(Uniforms._OcclusionProbes, m_Data.occlusion);
+        Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, m_Data.worldToLocal);
+#endif
 
 
         // Detail sky occlusion - for the probe set the camera is in
@@ -165,18 +173,15 @@ public partial class OcclusionProbes : MonoBehaviour
             }
         }
 
-        if (cmd != null)
-        {
-            cmd.SetGlobalTexture(Uniforms._OcclusionProbesDetail, occlusionDetail);
-            cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, worldToLocalDetail);
-            cmd.SetGlobalFloat(Uniforms._OcclusionProbesReflectionOcclusionAmount, m_Data.reflectionOcclusionAmount);
-        }
-        else // Legacy
-        {
-            Shader.SetGlobalTexture(Uniforms._OcclusionProbesDetail, occlusionDetail);
-            Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, worldToLocalDetail);
-            Shader.SetGlobalFloat(Uniforms._OcclusionProbesReflectionOcclusionAmount, m_Data.reflectionOcclusionAmount);
-        }
+#if HDRP_ENABLED
+        cmd.SetGlobalTexture(Uniforms._OcclusionProbesDetail, occlusionDetail);
+        cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, worldToLocalDetail);
+        cmd.SetGlobalFloat(Uniforms._OcclusionProbesReflectionOcclusionAmount, m_Data.reflectionOcclusionAmount);
+#else
+        Shader.SetGlobalTexture(Uniforms._OcclusionProbesDetail, occlusionDetail);
+        Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, worldToLocalDetail);
+        Shader.SetGlobalFloat(Uniforms._OcclusionProbesReflectionOcclusionAmount, m_Data.reflectionOcclusionAmount);
+#endif
     }
 
     static void SetAmbientProbeShaderUniforms(CommandBuffer cmd, AmbientProbeData ambientProbeData)
@@ -187,20 +192,22 @@ public partial class OcclusionProbes : MonoBehaviour
         
         if (ambientProbeData != null)
         {
-            if (cmd != null)
-                cmd.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ambientProbeData.sh);
-            else // Legacy
-                Shader.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ambientProbeData.sh);
+#if HDRP_ENABLED
+            cmd.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ambientProbeData.sh);
+#else
+            Shader.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ambientProbeData.sh);
+#endif
         }
         else
         {
             SphericalHarmonicsL2 ambientProbe =  RenderSettings.ambientProbe;
             // LightProbes.GetShaderConstantsFromNormalizedSH(ref ambientProbe, m_AmbientProbeSC);
             GetShaderConstantsFromNormalizedSH(ref ambientProbe, ms_AmbientProbeSC);
-            if (cmd != null)
-                cmd.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ms_AmbientProbeSC);
-            else // Legacy
-                Shader.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ms_AmbientProbeSC);
+#if HDRP_ENABLED
+            cmd.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ms_AmbientProbeSC);
+#else
+            Shader.SetGlobalVectorArray(Uniforms._AmbientProbeSH, ms_AmbientProbeSC);
+#endif
         }
     }
 
@@ -225,21 +232,17 @@ public partial class OcclusionProbes : MonoBehaviour
     {
         InitWhiteTexture();
 
-        if (cmd != null)
-        {
-            // To avoid extra variants in the shader, set up a white texture when probes are disabled.
-            cmd.SetGlobalTexture(Uniforms._OcclusionProbes, ms_White);
-            cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, Matrix4x4.identity);
-            cmd.SetGlobalTexture(Uniforms._OcclusionProbesDetail, ms_White);
-            cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, Matrix4x4.identity);
-        }
-        else // Legacy
-        {
-            Shader.SetGlobalTexture(Uniforms._OcclusionProbes, ms_White);
-            Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, Matrix4x4.identity);
-            Shader.SetGlobalTexture(Uniforms._OcclusionProbesDetail, ms_White);
-            Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, Matrix4x4.identity);
-        }
+        // To avoid extra variants in the shader, set up a white texture when probes are disabled.
+#if HDRP_ENABLED
+        cmd.SetGlobalTexture(Uniforms._OcclusionProbes, ms_White);
+        cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, Matrix4x4.identity);
+        cmd.SetGlobalTexture(Uniforms._OcclusionProbesDetail, ms_White);
+        cmd.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, Matrix4x4.identity);
+#else        
+        Shader.SetGlobalTexture(Uniforms._OcclusionProbes, ms_White);
+        Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocal, Matrix4x4.identity);
+        Shader.SetGlobalTexture(Uniforms._OcclusionProbesDetail, ms_White);
+        Shader.SetGlobalMatrix(Uniforms._OcclusionProbesWorldToLocalDetail, Matrix4x4.identity);
+#endif
     }
-
 }
