@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: M Occluded
-  m_Shader: {fileID: 4800000, guid: 5becc9ddf373de140b4b170258bf81c4, type: 3}
+  m_Shader: {fileID: 4800000, guid: 3de14cb5e75f7864d95969a1e7521fe8, type: 3}
   m_ShaderKeywords: _NORMALMAP_TANGENT_SPACE
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
