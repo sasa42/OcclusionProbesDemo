@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48a01689d4d77254f9a73360ec00e808, type: 3}
+  m_Name: AmbientProbeData
+  m_EditorClassIdentifier: 
+  sh:
+  - {x: 0.007252015, y: -0.0056823115, z: -0.0125606805, w: 0.16995363}
+  - {x: 0.011403261, y: 0.04134383, z: -0.019753262, w: 0.21133415}
+  - {x: 0.019656643, y: 0.12748495, z: -0.034053393, w: 0.2892073}
+  - {x: 0.005699968, y: -0.009872423, z: 0.030990474, w: -0.010436317}
+  - {x: 0.009111973, y: -0.01578327, z: 0.0431399, w: -0.015223595}
+  - {x: 0.016365191, y: -0.02834915, z: 0.05314666, w: -0.022085257}
+  - {x: 0.02503557, y: 0.034436062, z: 0.040465496, w: 1}
